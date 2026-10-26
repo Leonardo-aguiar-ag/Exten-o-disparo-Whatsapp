@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Private Bot by Leonardo Aguiar",
+  "version": "10.0.0",
+  "content_security_policy": {
+    "extension_pages": "script-src 'self'; object-src 'self'"
+  },
+  "permissions": [
+    "storage",
+    "tabs",
+    "scripting",
+    "activeTab",
+    "unlimitedStorage",
+    "alarms",
+    "notifications",
+    "downloads"
+  ],
+  "action": { "default_popup": "popup.html" },
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [{
+    "matches": ["https://web.whatsapp.com/*"],
+    "js": ["content.js"],
+    "run_at": "document_idle"
+  }],
+  "host_permissions": [
+    "https://web.whatsapp.com/*",
+    "https://script.google.com/*",
+    "https://*.googleusercontent.com/*",
+    "https://script.googleusercontent.com/*"
+  ]
+}

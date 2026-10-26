@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<script src="xlsx.full.min.js"></script>
+<style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #f8fafc; --sub: #94a3b8; --border: #334155; --input: #0f172a; --accent: #3b82f6; }
+    body.light-mode { --bg: #f1f5f9; --card: #ffffff; --text: #1e293b; --sub: #64748b; --border: #e2e8f0; --input: #f8fafc; --accent: #2563eb; }
+    * { box-sizing: border-box; }
+    body { width: 470px; margin: 0; font-family: 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); overflow-x: hidden; padding-bottom: 50px; transition: 0.2s; }
+
+    .header { display: flex; align-items: center; justify-content: space-between; padding: 14px 18px; background: var(--card); border-bottom: 1px solid var(--border); }
+    .header-profile { display: flex; align-items: center; gap: 10px; }
+    .header img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--accent); object-fit: cover; }
+    #themeToggle { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 10px; border-radius: 8px; cursor: pointer; font-size: 14px; }
+
+    .tabs { display: flex; background: var(--bg); border-bottom: 1px solid var(--border); overflow-x: auto; }
+    .tabs button { flex: 1; min-width: 72px; padding: 11px 0; border: none; background: transparent; color: var(--sub); font-weight: 600; font-size: 10.5px; cursor: pointer; border-bottom: 2px solid transparent; white-space: nowrap; }
+    .tabs button.active { color: var(--accent); border-bottom: 2px solid var(--accent); }
+
+    .aba { display: none; padding: 16px; height: 500px; overflow-y: auto; }
+    .aba.active { display: block; }
+
+    .box { background: var(--card); padding: 14px; border-radius: 12px; margin-bottom: 12px; border: 1px solid var(--border); }
+    label { display: block; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--sub); margin-bottom: 8px; font-weight: 700; }
+    textarea, input[type=text], input[type=number], input[type=time], input[type=date], input[type=datetime-local], select {
+        width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border);
+        background: var(--input); color: var(--text); font-size: 13px; outline: none; font-family: inherit;
+    }
+    textarea:focus, select:focus, input:focus { border-color: var(--accent); }
+
+    .btn { width: 100%; padding: 11px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; color: #fff; transition: 0.2s; margin-bottom: 8px; font-size: 12px; font-family: inherit; }
+    .btn-lg { padding: 15px; font-size: 14px; letter-spacing: 0.5px; }
+    .btn-success { background: #10b981; }
+    .btn-success:disabled { background: #64748b; cursor: not-allowed; opacity: 0.5; }
+    .btn-warning { background: #f59e0b; }
+    .btn-danger { background: #ef4444; }
+    .btn-primary { background: var(--accent); }
+    .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-sm { padding: 8px; font-size: 11px; }
+
+    .row { display: flex; gap: 8px; }
+    .row > * { flex: 1; }
+
+    .wa-status-bar { display: flex; align-items: center; justify-content: space-between; padding: 11px 18px; background: var(--card); border-top: 2px solid var(--border); position: fixed; bottom: 0; left: 0; width: 100%; z-index: 100; font-size: 12px; font-weight: 700; }
+    .wa-status-bar.online { border-top-color: #10b981; }
+    .wa-status-bar.online #wa-text { color: #10b981; }
+    .wa-status-bar.offline { border-top-color: #ef4444; }
+    .wa-status-bar.offline #wa-text { color: #ef4444; }
+
+    .progress-wrap { margin: 16px 0 8px; }
+    .progress-header { display: flex; justify-content: space-between; font-size: 12px; font-weight: 700; margin-bottom: 6px; }
+    .progress-bg { height: 8px; background: var(--border); border-radius: 8px; overflow: hidden; }
+    .progress-bar { height: 100%; background: #10b981; width: 0%; transition: 0.4s; }
+    .status-msg { text-align: center; font-size: 11px; color: var(--sub); font-weight: 600; margin: 10px 0 14px; }
+
+    .timer-row { display: flex; gap: 12px; margin-bottom: 12px; font-size: 12px; color: var(--sub); background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 10px; }
+    .timer-row > div { flex: 1; text-align: center; }
+    .timer-row b { color: var(--text); font-size: 14px; display: block; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+    .hint { font-size: 11px; color: var(--sub); margin: 8px 0 0; line-height: 1.5; }
+    .hint code { background: var(--input); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; color: var(--accent); font-family: 'Consolas', monospace; font-size: 11px; }
+
+    .crm-dashboard { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .dash-card { background: var(--card); border: 1px solid var(--border); padding: 8px 4px; border-radius: 8px; text-align: center; }
+    .dash-card span { display: block; font-size: 8.5px; text-transform: uppercase; color: var(--sub); font-weight: bold; margin-bottom: 2px; }
+    .dash-card b { font-size: 13px; }
+
+    /* Filtros de data */
+    .date-filters { display: flex; gap: 4px; margin-bottom: 10px; }
+    .date-filters button { flex: 1; padding: 6px 4px; font-size: 10px; font-weight: 700; background: var(--card); color: var(--sub); border: 1px solid var(--border); border-radius: 6px; cursor: pointer; }
+    .date-filters button.active { background: var(--accent); color: white; border-color: var(--accent); }
+
+    /* Gráfico de barras */
+    .chart-bars { display: flex; align-items: flex-end; gap: 4px; height: 80px; padding: 8px 4px; }
+    .chart-bars .bar { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; position: relative; min-height: 3px; transition: 0.3s; }
+    .chart-bars .bar:hover { background: #10b981; }
+    .chart-bars .bar span { position: absolute; top: -16px; left: 50%; transform: translateX(-50%); font-size: 9px; color: var(--text); font-weight: 700; }
+    .chart-labels { display: flex; gap: 4px; padding: 0 4px; font-size: 9px; color: var(--sub); text-align: center; }
+    .chart-labels span { flex: 1; }
+
+    /* Barra de progresso horizontal (dashboard) */
+    .conv-bar { display: flex; height: 22px; border-radius: 6px; overflow: hidden; margin-top: 10px; font-size: 10px; font-weight: 700; }
+    .conv-bar > div { display: flex; align-items: center; justify-content: center; color: white; }
+    .conv-enviados { background: #10b981; }
+    .conv-respondidos { background: #3b82f6; }
+    .conv-erros { background: #ef4444; }
+
+    .banner { padding: 10px 12px; border-radius: 8px; background: #f59e0b22; border: 1px solid #f59e0b; color: #f59e0b; font-size: 11px; margin-bottom: 12px; display: none; }
+    .banner.show { display: block; }
+
+    .ajuda-section { margin-bottom: 16px; }
+    .ajuda-section h3 { font-size: 13px; margin: 0 0 8px; color: var(--text); display: flex; align-items: center; gap: 6px; }
+    .ajuda-section p, .ajuda-section li { font-size: 12px; color: var(--sub); line-height: 1.6; margin: 4px 0; }
+    .ajuda-section ol, .ajuda-section ul { padding-left: 18px; margin: 4px 0; }
+    .ajuda-section pre { background: var(--input); border: 1px solid var(--border); border-radius: 6px; padding: 10px; font-size: 11px; color: var(--text); overflow-x: auto; font-family: 'Consolas', monospace; line-height: 1.5; margin: 8px 0; }
+    .ajuda-section code { background: var(--input); border: 1px solid var(--border); padding: 1px 6px; border-radius: 4px; color: var(--accent); font-family: 'Consolas', monospace; font-size: 11px; }
+
+    /* Onboarding */
+    #onboarding { position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 9999; display: none; align-items: center; justify-content: center; padding: 20px; }
+    #onboarding.show { display: flex; }
+    .onb-card { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 22px; max-width: 400px; width: 100%; }
+    .onb-card h2 { margin: 0 0 10px; font-size: 17px; }
+    .onb-card p { font-size: 13px; color: var(--sub); line-height: 1.6; margin: 8px 0; }
+    .onb-step { font-size: 11px; color: var(--sub); font-weight: 700; margin-bottom: 6px; }
+
+    /* Undo button (flutuante) */
+    #btnUndo { position: fixed; bottom: 60px; right: 12px; background: #f59e0b; color: white; border: none; border-radius: 20px; padding: 8px 14px; font-size: 11px; font-weight: 700; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.3); display: none; z-index: 200; }
+    #btnUndo.show { display: block; }
+
+    /* Notas */
+    .btn-note { background: transparent; border: 1px solid var(--border); color: var(--sub); padding: 3px 6px; border-radius: 4px; cursor: pointer; font-size: 10px; }
+    .btn-note.tem-nota { background: #3b82f622; color: #3b82f6; border-color: #3b82f6; }
+
+    /* Digitando */
+    .typing-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #3b82f6; margin-left: 4px; animation: pulse 1s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 10px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+    <div class="header-profile">
+        <img src="foto perfil.jpeg" onerror="this.src='https://ui-avatars.com/api/?name=L&background=3b82f6&color=fff'">
+        <div>
+            <div style="font-weight:700;font-size:15px;">Private Bot</div>
+            <div style="font-size:10px;color:var(--sub);font-weight:600;">V10.0 • <span id="perfilAtivoLabel">Leonardo Aguiar</span></div>
+        </div>
+    </div>
+    <button id="themeToggle">🌙</button>
+</div>
+
+<div class="tabs">
+    <button class="tab-btn active" data-target="disparo">▶ DISPARO</button>
+    <button class="tab-btn" data-target="scripts">✍️ SCRIPTS</button>
+    <button class="tab-btn" data-target="campanhas">🎯 CAMPANHAS</button>
+    <button class="tab-btn" data-target="crm">📊 CRM</button>
+    <button class="tab-btn" data-target="config">⚙️ CONFIG</button>
+    <button class="tab-btn" data-target="ajuda">❓ AJUDA</button>
+</div>
+
+<!-- ================= DISPARO ================= -->
+<div id="disparo" class="aba active">
+    <div id="bannerRetomar" class="banner">
+        ⚠️ Existe um disparo pendente.
+        <div style="margin-top:8px;display:flex;gap:6px;">
+            <button id="btnRetomarBanner" style="background:#f59e0b;border:none;color:#fff;padding:6px 12px;border-radius:6px;font-weight:700;cursor:pointer;font-size:11px;">RETOMAR AGORA</button>
+            <button id="btnDescartar" style="background:transparent;border:1px solid #f59e0b;color:#f59e0b;padding:6px 12px;border-radius:6px;font-weight:700;cursor:pointer;font-size:11px;">DESCARTAR</button>
+        </div>
+    </div>
+
+    <div class="box" style="padding:12px;">
+        <label>📋 Cole a lista de contatos</label>
+        <textarea id="numeros" placeholder="85999999999;João&#10;85888888888;Maria" style="height:140px;resize:none;"></textarea>
+        <div class="row" style="margin-top:8px;">
+            <button id="btnImportarLista" class="btn btn-ghost btn-sm" style="margin:0;">📁 IMPORTAR EXCEL/CSV</button>
+        </div>
+        <input type="file" id="inputLista" accept=".xlsx,.xls,.csv,.txt" style="display:none;">
+        <p class="hint">Formatos aceitos: <code>85999999999;João</code> · <code>85999999999</code> · <code>João: 85999999999</code></p>
+    </div>
+
+    <button id="btnStart" class="btn btn-success btn-lg" disabled>▶ INICIAR DISPARO</button>
+
+    <div class="row">
+        <button id="btnPause" class="btn btn-warning" style="margin:0;">⏸ PAUSAR</button>
+        <button id="btnStop" class="btn btn-danger" style="margin:0;">⏹ PARAR</button>
+    </div>
+
+    <button id="btnRetomar" class="btn btn-primary" style="margin-top:8px;">🔄 RETOMAR ÚLTIMO DISPARO</button>
+
+    <div class="progress-wrap">
+        <div class="progress-header">
+            <span id="txtEnvios">0 / 0</span>
+            <span id="percent" style="color:#10b981;">0%</span>
+        </div>
+        <div class="progress-bg"><div id="bar" class="progress-bar"></div></div>
+    </div>
+    <div id="statusCampanha" class="status-msg">Aguardando comando...</div>
+
+    <div class="timer-row">
+        <div>⏱ DECORRIDO<b id="valDecorrido">00:00:00</b></div>
+        <div>⏳ CONTATO ATUAL<b id="valContatoAtual">—</b></div>
+        <div>⌛ ESTIMATIVA<b id="valEstimado">00:00:00</b></div>
+    </div>
+
+    <button id="btnPreview" class="btn btn-ghost btn-sm">👁 PRÉ-VISUALIZAR MENSAGEM</button>
+</div>
+
+<!-- ================= SCRIPTS ================= -->
+<div id="scripts" class="aba">
+    <div class="box">
+        <label>Campanhas salvas</label>
+        <div class="row" style="margin-bottom:8px;">
+            <select id="selCampanha" style="flex:3;"><option value="">-- Scripts em Edição --</option></select>
+            <button id="btnDeletarCampanha" class="btn btn-danger" style="flex:0 0 40px;margin:0;padding:0;">🗑</button>
+        </div>
+        <input type="text" id="nomeNovaCampanha" placeholder="Nome da campanha" style="margin-bottom:8px;">
+        <button id="btnSalvarCampanha" class="btn btn-primary btn-sm" style="margin:0;">💾 SALVAR / ATUALIZAR</button>
+    </div>
+    <div class="row" style="margin-bottom:10px;">
+        <button id="btnImportarScripts" class="btn btn-primary btn-sm" style="margin:0;">📥 IMPORTAR</button>
+        <button id="btnExportarScripts" class="btn btn-success btn-sm" style="margin:0;">📤 EXPORTAR</button>
+        <button id="btnLimparScripts" class="btn btn-ghost btn-sm" style="margin:0;">🗑 LIMPAR</button>
+    </div>
+    <input type="file" id="inputScripts" accept=".txt,.json" style="display:none;">
+    <p class="hint" style="text-align:center;margin-bottom:12px;">Use <code>[NOME]</code> e spintax <code>{Oi|Olá}</code></p>
+    <div id="contScripts"></div>
+</div>
+
+<!-- ================= CAMPANHAS ================= -->
+<div id="campanhas" class="aba">
+    <div class="box">
+        <label>Modo de Campanha</label>
+        <select id="modoCampanha">
+            <option value="normal">Normal (lista + scripts)</option>
+            <option value="ab">A/B Testing (variações)</option>
+            <option value="drip">Drip / Sequência</option>
+        </select>
+        <p class="hint">Drip envia vários passos ao longo dos dias — só para quem NÃO respondeu (ou para todos, se você marcar).</p>
+    </div>
+
+    <div id="painelAB" class="box" style="display:none;">
+        <label>Variantes A/B</label>
+        <p class="hint">Cada contato recebe uma variante alternada.</p>
+        <div id="variantesContainer"></div>
+        <button id="btnAddVariante" class="btn btn-ghost btn-sm">+ ADICIONAR VARIANTE</button>
+    </div>
+
+    <div id="painelDrip" class="box" style="display:none;">
+        <label>Passos da Sequência</label>
+        <p class="hint">Passo 0 dispara imediatamente. Demais só disparam no dia indicado.</p>
+        <div id="passosContainer"></div>
+        <button id="btnAddPasso" class="btn btn-ghost btn-sm">+ ADICIONAR PASSO</button>
+        <button id="btnIniciarDrip" class="btn btn-success" style="margin-top:10px;">▶ INICIAR SEQUÊNCIA</button>
+    </div>
+
+    <div class="box">
+        <label>Agendamento (opcional)</label>
+        <input type="datetime-local" id="agendamentoData">
+    </div>
+</div>
+
+<!-- ================= CRM ================= -->
+<div id="crm" class="aba">
+    <div class="crm-dashboard">
+        <div class="dash-card"><span>Total</span><b id="crmTotal">0</b></div>
+        <div class="dash-card"><span>OK</span><b id="crmOk" style="color:#10b981;">0</b></div>
+        <div class="dash-card"><span>Erros</span><b id="crmErro" style="color:#ef4444;">0</b></div>
+        <div class="dash-card"><span>Respond.</span><b id="crmResp" style="color:#3b82f6;">0</b></div>
+        <div class="dash-card"><span>Digitando</span><b id="crmDigit" style="color:#8b5cf6;">0</b></div>
+    </div>
+
+    <!-- Dashboard de conversão -->
+    <div class="box" style="padding:10px;">
+        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;margin-bottom:6px;">📈 Taxa de conversão</div>
+        <div class="conv-bar" id="convBar"></div>
+    </div>
+
+    <!-- Gráfico de barras últimos 7 dias -->
+    <div class="box" style="padding:10px;">
+        <div style="font-size:10px;color:var(--sub);font-weight:700;text-transform:uppercase;">📊 Envios nos últimos 7 dias</div>
+        <div class="chart-bars" id="chartBars"></div>
+        <div class="chart-labels" id="chartLabels"></div>
+    </div>
+
+    <!-- Filtros de data -->
+    <div class="date-filters">
+        <button data-dias="0" class="date-btn active">Hoje</button>
+        <button data-dias="1" class="date-btn">Ontem</button>
+        <button data-dias="7" class="date-btn">7 dias</button>
+        <button data-dias="30" class="date-btn">30 dias</button>
+        <button data-dias="-1" class="date-btn">Tudo</button>
+    </div>
+
+    <div class="box" style="display:flex;gap:6px;padding:10px;">
+        <input type="text" id="crmBusca" placeholder="Buscar..." style="flex:1;">
+        <button id="btnExportar" class="btn btn-success" style="flex:0 0 auto;width:auto;margin:0;padding:8px 10px;" title="Exportar tudo">📥</button>
+        <button id="btnExportarRespondidos" class="btn btn-primary" style="flex:0 0 auto;width:auto;margin:0;padding:8px 10px;" title="Exportar só respondidos">✅</button>
+        <button id="btnBackup" class="btn btn-primary" style="flex:0 0 auto;width:auto;margin:0;padding:8px 10px;" title="Backup">💾</button>
+        <button id="btnRestaurar" class="btn btn-ghost" style="flex:0 0 auto;width:auto;margin:0;padding:8px 10px;" title="Restaurar">📂</button>
+        <button id="btnLimparCRM" class="btn btn-danger" style="flex:0 0 auto;width:auto;margin:0;padding:8px 10px;">🗑</button>
+        <input type="file" id="inputRestore" accept=".json" style="display:none;">
+    </div>
+
+    <div class="box" style="padding:5px;max-height:250px;overflow-y:auto;">
+        <table style="width:100%;border-collapse:collapse;font-size:11px;text-align:left;">
+            <thead style="background:var(--bg);position:sticky;top:0;">
+                <tr>
+                    <th style="padding:6px;color:var(--sub);">#</th>
+                    <th style="padding:6px;color:var(--sub);">Nome</th>
+                    <th style="padding:6px;color:var(--sub);">Status</th>
+                    <th style="padding:6px;color:var(--sub);">Hora</th>
+                    <th style="padding:6px;color:var(--sub);">📝</th>
+                </tr>
+            </thead>
+            <tbody id="crmBody"></tbody>
+        </table>
+    </div>
+</div>
+
+<!-- ================= CONFIG ================= -->
+<div id="config" class="aba">
+
+    <!-- MULTI-PERFIL -->
+    <div class="box">
+        <label>👥 Perfis</label>
+        <div class="row" style="margin-bottom:6px;">
+            <select id="selPerfil" style="flex:1;"><option value="">(nenhum)</option></select>
+            <button id="btnDeletarPerfil" class="btn btn-danger" style="flex:0 0 40px;margin:0;padding:0;">🗑</button>
+        </div>
+        <div class="row">
+            <input type="text" id="nomeNovoPerfil" placeholder="Nome do novo perfil" style="flex:1;">
+            <button id="btnSalvarPerfil" class="btn btn-primary btn-sm" style="flex:0 0 auto;width:auto;margin:0;padding:8px 10px;">💾</button>
+        </div>
+        <p class="hint">Perfis salvam config + scripts + campanhas + lista.</p>
+    </div>
+
+    <div class="box">
+        <label>Conta WhatsApp</label>
+        <select id="contaAtual"><option value="">(qualquer aba aberta)</option></select>
+    </div>
+
+    <div class="box">
+        <label>Delay entre mensagens</label>
+        <div class="row" style="align-items:center;">
+            <input id="minDelay" type="number" value="15">
+            <span style="font-size:11px;color:var(--sub);flex:0 0 auto;padding:0 4px;">até</span>
+            <input id="maxDelay" type="number" value="30">
+            <span style="font-size:11px;color:var(--sub);flex:0 0 auto;padding-left:4px;">seg</span>
+        </div>
+    </div>
+
+    <div class="box">
+        <label>Pausa por lote</label>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;">
+            <input type="checkbox" id="chkPausaLote" style="width:16px;height:16px;">
+            <span>Pausar a cada <input id="qtdLote" type="number" value="20" style="width:55px;padding:4px;display:inline-block;"> por <input id="tempoLote" type="number" value="5" style="width:55px;padding:4px;display:inline-block;"> min</span>
+        </div>
+    </div>
+
+    <div class="box">
+        <label>Horário comercial</label>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+            <input type="checkbox" id="horarioAtivo" style="width:16px;height:16px;">
+            <span style="font-size:12px;">Ativar restrição</span>
+        </div>
+        <div class="row" style="margin-bottom:8px;">
+            <input type="time" id="horarioInicio" value="08:00">
+            <input type="time" id="horarioFim" value="20:00">
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;font-size:11px;">
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="1">Seg</label>
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="2">Ter</label>
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="3">Qua</label>
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="4">Qui</label>
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="5">Sex</label>
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="6">Sáb</label>
+            <label style="display:inline-flex;align-items:center;gap:2px;text-transform:none;margin:0;"><input type="checkbox" class="diaSemana" value="0">Dom</label>
+        </div>
+    </div>
+
+    <div class="box">
+        <label>Duplicatas</label>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;">
+            <input type="checkbox" id="ignoraDuplicatas" style="width:16px;height:16px;">
+            <span>Ignorar números repetidos</span>
+        </div>
+        <div style="font-size:12px;color:var(--sub);">Enviados nos últimos <input type="number" id="diasDuplicata" value="30" style="width:55px;padding:4px;display:inline-block;"> dias</div>
+    </div>
+
+    <div class="box">
+        <label>Warm-up (aquecimento)</label>
+        <div style="display:flex;align-items:center;gap:8px;font-size:12px;margin-bottom:6px;">
+            <input type="checkbox" id="warmUpAtivo" style="width:16px;height:16px;">
+            <span>Limite diário crescente</span>
+        </div>
+        <div style="font-size:12px;color:var(--sub);">Início: <input type="date" id="warmUpInicio" style="display:inline-block;width:auto;padding:4px;"></div>
+    </div>
+
+    <button id="salvarConfig" class="btn btn-primary">💾 SALVAR CONFIGURAÇÕES</button>
+    <button id="forcarConexao" class="btn btn-ghost">🔄 Verificar conexão</button>
+</div>
+
+<!-- ================= AJUDA ================= -->
+<div id="ajuda" class="aba">
+    <div class="box">
+        <h3 style="margin-top:0;font-size:14px;">🚀 Começar em 3 passos</h3>
+        <ol>
+            <li>Abra o <b>WhatsApp Web</b> e faça login</li>
+            <li>Cole a lista de números na aba <b>DISPARO</b></li>
+            <li>Escreva a mensagem na aba <b>SCRIPTS</b> e clique <b>▶ INICIAR</b></li>
+        </ol>
+    </div>
+
+    <div class="ajuda-section box">
+        <h3>▶ DISPARO</h3>
+        <p>Cole a lista de contatos, <b>um por linha</b>:</p>
+        <pre>85999999999;João Silva
+85888888888;Maria
+85977777777</pre>
+        <p>Botões principais:</p>
+        <ul>
+            <li><b>▶ INICIAR</b> — começa o disparo</li>
+            <li><b>⏸ PAUSAR</b> — interrompe sem perder progresso</li>
+            <li><b>⏹ PARAR</b> — encerra de vez</li>
+            <li><b>🔄 RETOMAR ÚLTIMO</b> — continua de onde parou</li>
+            <li><b>📁 IMPORTAR EXCEL/CSV</b> — carrega lista de arquivo (.xlsx, .xls, .csv, .txt)</li>
+            <li><b>👁 PREVIEW</b> — mostra 3 exemplos da mensagem final</li>
+        </ul>
+        <p><b>⏳ CONTATO ATUAL</b> mostra há quanto tempo está no contato atual — se passar de 60s é sinal de travamento.</p>
+    </div>
+
+    <div class="ajuda-section box">
+        <h3>✍️ SCRIPTS</h3>
+        <p>Cada caixa marcada é uma variação. Use:</p>
+        <ul>
+            <li><code>[NOME]</code> → nome do contato</li>
+            <li><code>{Oi|Olá|Ei}</code> → sorteia uma das opções</li>
+        </ul>
+        <p>Exemplo:</p>
+        <pre>{Olá|Oi|Tudo bem}, [NOME]!
+Sou o Leonardo, consultor Hapvida.</pre>
+        <p>Salve combos como <b>Campanha</b> para reutilizar.</p>
+    </div>
+
+    <div class="ajuda-section box">
+        <h3>🎯 CAMPANHAS</h3>
+        <ul>
+            <li><b>Normal</b> — 1 mensagem por contato</li>
+            <li><b>A/B</b> — testa variações alternadas</li>
+            <li><b>Drip</b> — sequência em vários dias</li>
+        </ul>
+        <p>No <b>Drip</b>, cada passo tem um campo <b>"Enviar mesmo se respondeu"</b>:</p>
+        <ul>
+            <li>Se <b>desmarcado</b> (padrão): só envia para quem NÃO respondeu</li>
+            <li>Se <b>marcado</b>: envia para todos, independente de resposta</li>
+        </ul>
+        <p>Marque <b>Agendamento</b> para iniciar em data/hora específica.</p>
+    </div>
+
+    <div class="ajuda-section box">
+        <h3>📊 CRM</h3>
+        <p><b>Dashboard do topo:</b></p>
+        <ul>
+            <li><b>Total</b> — todos os envios</li>
+            <li><b>OK</b> — enviados com sucesso</li>
+            <li><b>Erros</b> — inválidos, timeout</li>
+            <li><b>Respond.</b> — contatos que responderam</li>
+            <li><b>Digitando</b> — contatos que começaram a digitar (lead quente!)</li>
+        </ul>
+        <p><b>Taxa de conversão:</b> barra horizontal com % de envios bem-sucedidos e % de respostas.</p>
+        <p><b>Envios nos últimos 7 dias:</b> gráfico de barras com volume diário.</p>
+        <p><b>Filtros de data:</b> Hoje · Ontem · 7 dias · 30 dias · Tudo.</p>
+        <p><b>Botões:</b></p>
+        <ul>
+            <li><b>📥</b> Exportar tudo pra Excel</li>
+            <li><b>✅</b> Exportar SÓ os que responderam</li>
+            <li><b>💾</b> Backup completo (JSON)</li>
+            <li><b>📂</b> Restaurar backup</li>
+            <li><b>🗑</b> Limpar histórico (com opção de desfazer por 2min)</li>
+        </ul>
+        <p>Clique no <b>📝</b> de qualquer linha para adicionar uma nota pessoal.</p>
+    </div>
+
+    <div class="ajuda-section box">
+        <h3>⚙️ CONFIG</h3>
+        <p><b>👥 Perfis:</b> salva config + scripts + campanhas + lista num perfil. Útil se você trabalha com várias contas/segmentos.</p>
+        <ul>
+            <li>Digite um nome, clique <b>💾</b> para criar/atualizar</li>
+            <li>Selecione no dropdown para trocar de perfil</li>
+            <li>🗑 para excluir</li>
+        </ul>
+        <p><b>Delay:</b> tempo aleatório entre mensagens (recomendado 15–30s).</p>
+        <p><b>Pausa por lote:</b> descansa após X envios por Y minutos.</p>
+        <p><b>Horário comercial:</b> só dispara dentro da janela.</p>
+        <p><b>Duplicatas:</b> pula números já enviados recentemente.</p>
+        <p><b>Warm-up:</b> limite diário crescente (número novo).</p>
+    </div>
+
+    <div class="ajuda-section box">
+        <h3>🎁 Recursos automáticos</h3>
+        <ul>
+            <li><b>Backup semanal:</b> toda semana salva backup automaticamente em <code>Downloads/private_bot_backups/</code></li>
+            <li><b>Modo escuro automático:</b> detecta preferência do Windows/Mac</li>
+            <li><b>Notificação de conclusão:</b> aviso do sistema quando o disparo termina</li>
+            <li><b>Undo:</b> se apagar CRM por engano, botão <b>DESFAZER</b> aparece por 2 minutos</li>
+            <li><b>Detecção de digitação:</b> quando o contato está digitando, ele é marcado no CRM como lead quente</li>
+        </ul>
+    </div>
+
+    <div class="ajuda-section box" style="background:#10b98122;border-color:#10b981;">
+        <h3 style="color:#10b981;">💡 Dicas rápidas</h3>
+        <ul style="color:var(--text);">
+            <li>Mantenha o WhatsApp Web aberto durante o disparo</li>
+            <li>Não feche o navegador</li>
+            <li>Comece com poucos contatos para testar</li>
+            <li>Números novos: ative o <b>Warm-up</b></li>
+            <li>Use <b>🔄 RETOMAR</b> se algo travar</li>
+            <li>Faça backup manual antes de disparos grandes</li>
+        </ul>
+    </div>
+</div>
+
+<div id="wa-status-bar" class="wa-status-bar offline">
+    <div style="display:flex;align-items:center;gap:8px;">
+        <span id="wa-icon">🔴</span>
+        <span id="wa-text">Aguardando WhatsApp...</span>
+    </div>
+    <div id="wa-chip" style="display:none;background:#10b98122;color:#10b981;padding:3px 10px;border-radius:12px;font-size:10px;font-weight:800;"></div>
+</div>
+
+<!-- Botão undo flutuante -->
+<button id="btnUndo">↶ DESFAZER</button>
+
+<!-- Onboarding overlay -->
+<div id="onboarding">
+    <div class="onb-card">
+        <div class="onb-step" id="onbStep">Passo 1 de 4</div>
+        <h2 id="onbTitle">Bem-vindo ao Private Bot!</h2>
+        <p id="onbText">Este robô envia mensagens automáticas pelo WhatsApp Web.</p>
+        <div style="display:flex;gap:8px;margin-top:16px;">
+            <button id="onbSkip" class="btn btn-ghost" style="margin:0;">PULAR</button>
+            <button id="onbNext" class="btn btn-primary" style="margin:0;">PRÓXIMO</button>
+        </div>
+    </div>
+</div>
+
+<script src="popup.js"></script>
+</body>
+</html>
